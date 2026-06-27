@@ -70,7 +70,9 @@ Follows the device/OS color scheme preference by default. Toggleable via the too
 ## Project Structure
 
 ```
-index.html            Main application (React + Three.js, single file)
+index.html            Main application shell (React UI via Babel)
+app-core.js           Themes, i18n, helpers, and shared constants
+data.js               All 309 historical entries (English)
 data_es.js            Spanish translations for all 309 entries
 data_wiki.js          English encyclopedia articles
 data_wiki_es.js       Spanish encyclopedia articles
