@@ -1,0 +1,28 @@
+{
+  "name": "romainvicta",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "audit:deps": "npm audit --omit=dev --audit-level=high",
+    "deploy": "npm run build && npx surge@0.31.1 ./dist romainvicta.surge.sh"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "three": "^0.160.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "surge": "0.31.1",
+    "vite": "^6.0.7",
+    "vitest": "^2.1.8"
+  }
+}

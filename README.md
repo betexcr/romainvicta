@@ -59,44 +59,50 @@ Follows the device/OS color scheme preference by default. Toggleable via the too
 
 | Layer | Technology |
 |-------|-----------|
-| UI | React 18 (CDN, JSX via Babel standalone) |
-| 3D | Three.js r128 |
+| UI | React 18 (Vite + JSX build) |
+| 3D | Three.js (npm) |
 | Styling | Inline styles with theme system |
-| Data | Static JS modules (~4,500 lines of historical content) |
-| Build | None — single `index.html`, zero build step |
+| Data | ES modules under `src/data/` |
+| Build | Vite → `dist/` |
+| Hosting | Surge (`romainvicta.surge.sh`) + meta CSP (HTTP `_headers` for portable hosts) |
 
 ---
 
 ## Project Structure
 
 ```
-index.html            Main application shell (React UI via Babel)
-app-core.js           Themes, i18n, helpers, and shared constants
-data.js               All 309 historical entries (English)
-data_es.js            Spanish translations for all 309 entries
-data_wiki.js          English encyclopedia articles
-data_wiki_es.js       Spanish encyclopedia articles
-data_stats.js         Historical statistics (population, territory, legions, roads)
-data_tours.js         Guided tour definitions (EN/ES)
-data_images.js        Image URLs for entries
-earth.jpg             Earth texture for the 3D globe
-audio/                Ambient soundtrack files
-favicon.svg           SPQR laurel wreath favicon
-og-image.png          Open Graph social sharing image
-og-image.svg          Source SVG for the OG image
+index.html            Vite HTML shell
+src/main.jsx          React createRoot entry + observability
+src/RomanGlobe.jsx    Main application UI
+src/ErrorBoundary.jsx Runtime error fallback
+src/lib/              Hardening helpers + client logging
+src/data/             Historical data ESM modules (events, i18n, wiki, tours)
+public/               Static assets (earth.jpg, audio/, _headers)
+tests/                Vitest content/URL integrity tests
+e2e/                  Playwright smoke tests
 ```
+
+Legacy root `data_*.js` / `app-core.js` remain as the editable source for content; regenerate `src/data/` with `node scripts/setup-data-modules.mjs` after content edits.
 
 ---
 
 ## Running Locally
 
-No build step required. Serve the directory with any static file server:
-
 ```bash
-npx serve
+npm install
+npm run dev
 ```
 
-Then open http://localhost:3000.
+Open http://localhost:5173.
+
+```bash
+npm run build    # production bundle in dist/
+npm test         # unit + content integrity
+npm run test:e2e # Playwright smoke against preview
+npm run deploy   # build + publish dist/ to Surge (requires SURGE_TOKEN / surge login)
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for adding events, Spanish index alignment, deploy/rollback, and CSP notes.
 
 ---
 

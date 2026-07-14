@@ -1,17 +1,83 @@
-name: Deploy to Surge
+name: Deploy
 
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  deploy:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Unit tests
+        run: npm test
+      - name: Dependency audit
+        run: npm audit --omit=dev --audit-level=high
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium --with-deps
+      - name: Build
+        run: npm run build
+        env:
+          VITE_APP_VERSION: ${{ github.sha }}
+      - name: E2E smoke
+        run: npm run test:e2e
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7
 
-      - name: Install Surge
-        run: npm install -g surge
-
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Download dist artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
       - name: Deploy to Surge
-        run: surge . romainvicta.surge.sh --token ${{ secrets.SURGE_TOKEN }}
+        run: npx surge@0.31.1 ./dist romainvicta.surge.sh --token ${{ secrets.SURGE_TOKEN }}
+      - name: Smoke check
+        run: |
+          set -euo pipefail
+          CODE=$(curl -fsSL -o /tmp/roma.html -w "%{http_code}" https://romainvicta.surge.sh/)
+          echo "HTTP $CODE"
+          echo "$CODE" | grep -E '200|301|302'
+          grep -q 'Imperium\|root\|script' /tmp/roma.html
+          grep -qi 'Content-Security-Policy' /tmp/roma.html
+          curl -fsSL -o /dev/null -w "%{http_code}\n" https://romainvicta.surge.sh/earth.jpg | grep -E '200|301|302'
+          JS=$(grep -oE '/assets/index-[^"]+\.js' /tmp/roma.html | head -1)
+          if [ -n "$JS" ]; then
+            curl -fsSL -o /dev/null -w "%{http_code}\n" "https://romainvicta.surge.sh${JS}" | grep -E '200|301|302'
+          fi
+          # Surge often does not emit Netlify-style _headers; log HTTP CSP for operators
+          if curl -sI https://romainvicta.surge.sh/ | grep -qi 'content-security-policy'; then
+            echo "HTTP CSP header: present"
+          else
+            echo "HTTP CSP header: absent (meta CSP in HTML is the primary control on Surge)"
+          fi

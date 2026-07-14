@@ -4,12 +4,13 @@
  * Run: npx playwright install chromium && node capture-screenshots.mjs
  */
 import { chromium } from 'playwright';
-import { writeFileSync } from 'fs';
+import { writeFileSync, mkdirSync } from 'fs';
 
-const URL = 'http://localhost:3000';
+const URL = process.env.ROMA_URL || 'http://localhost:5173';
 const OUT = './screenshots';
 
 async function main() {
+  mkdirSync(OUT, { recursive: true });
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ viewport: { width: 1400, height: 900 } });
   const page = await context.newPage();

@@ -1,4 +1,11 @@
 node_modules/
+dist/
 .cursor/
 screenshots/
 .DS_Store
+*.log
+.env
+.env.*
+!.env.example
+test-results/
+playwright-report/
